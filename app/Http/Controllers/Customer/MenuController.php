@@ -9,10 +9,14 @@ use Illuminate\Http\Request;
 class MenuController extends Controller
 {
     public function index()
-    {
-        $products = Product::where('status', true)->get();
-        return view('customer.HotpotSoup', compact('products'));
-    }
+{
+    return view('customer.HotpotSoup');
+}
+    // public function index()
+    // {
+    //     $products = Product::where('status', true)->get();
+    //     return view('customer.HotpotSoup', compact('products'));
+    // }
 
     public function addToCart(Request $request)
     {
