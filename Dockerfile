@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Install system packages
+# Install system packages + PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -10,31 +10,35 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    ca-certificates \
     nodejs \
     npm \
-    && docker-php-ext-install zip pdo pdo_mysql
+    && docker-php-ext-install zip pdo pdo_mysql mbstring \
+    && update-ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy project
+# Copy project files
 COPY . .
 
-# Install PHP packages
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Install Node packages
-RUN npm install
+# Install Node and build frontend assets
+RUN npm install && npm run build
 
-# Build Vite
-RUN npm run build
+# Create required storage directories and set permissions
+RUN mkdir -p storage/framework/sessions \
+             storage/framework/views \
+             storage/framework/cache/data \
+             storage/logs \
+    && chmod -R 777 storage bootstrap/cache \
+    && chmod +x start.sh
 
 EXPOSE 10000
 
-CMD php artisan migrate --force && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    php artisan serve --host=0.0.0.0 --port=$PORT
+CMD ["/bin/sh", "start.sh"]
